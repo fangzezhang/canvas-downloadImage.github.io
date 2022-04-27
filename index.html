@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>index</title>
+  <style>
+    #canvas {
+      background: gray;
+    }
+
+    .container {
+      display: flex;
+    }
+
+    .config {
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <canvas id="canvas" width="700" height="700"></canvas>
+  <div class="config">
+    <div>
+      <div>画笔</div>
+      X偏移量 <input type="number" id="brushX" oninput="brushXChange(event)">
+      Y偏移量 <input type="number" id="brushY" oninput="brushYChange(event)">
+      宽度 <input type="number" id="brushWidth" oninput="brushWidthChange(event)">
+      线段效果(lineCap)
+      <select id="brushLine" onchange="brushLineChange(event)">
+        <option value="butt">butt</option>
+        <option value="round">round</option>
+        <option value="square">square</option>
+      </select>
+    </div>
+    <div>
+      颜色 <input type="color" id="brushColor" onchange="brushColorChange(event)">
+    </div>
+    <div>
+      连接鼠标松开位置 <input type="checkbox" id="brushPoint" onchange="brushPointChange(event)">
+    </div>
+    <div>
+      射线 <input type="checkbox" id="brushRay" onchange="brushRayChange(event)">
+    </div>
+    <div>
+      上传背景图 <input type="file" id="backgroundImage" accept="image/png, image/jpeg" onchange="backgroundImageChange(event)">
+    </div>
+  </div>
+</div>
+<button onclick="downLoadImage()">download image</button>
+<script>
+  const brushX = document.getElementById('brushX');
+  const brushY = document.getElementById('brushY');
+  const brushWidth = document.getElementById('brushWidth');
+  const brushColor = document.getElementById('brushColor');
+  const brushPoint = document.getElementById('brushPoint');
+  const brushLine = document.getElementById('brushLine');
+  const brushRay = document.getElementById('brushRay');
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+  let prevPoint = null;
+  let rayPoint = null;
+  let mouseX = 0;
+  let mouseY = 0;
+  let mousedown = false;
+  let url = '';
+  let brushXOffset = 0.1;
+  let brushYOffset = 0.1;
+  let width = 1;
+  let color = '#ff0000';
+  let brushLineValue = 'round';
+  let brushPonitLink = true;
+  let brushRayChecked = false;
+
+  canvas.addEventListener('mousedown', function (e) {
+    mousedown = true;
+    brushRayChecked && (rayPoint = [e.pageX - canvas.offsetLeft, e.pageY - canvas.offsetTop]);
+    draw(e);
+  });
+
+  canvas.addEventListener('mouseup', function () {
+    mousedown = false;
+    !brushPonitLink && resetPrevPoint();
+  });
+
+  /*canvas.addEventListener('mouseleave', function (e) {
+    mousedown = false;
+    !brushPonitLink && resetPrevPoint();
+  });*/
+
+  canvas.addEventListener('mousemove', draw);
+
+  (function init() {
+    brushX.value = brushXOffset;
+    brushY.value = brushYOffset;
+    brushWidth.value = width;
+    brushColor.value = color;
+    brushLine.value = brushLineValue;
+    brushPoint.checked = brushPonitLink;
+    brushRay.checked = brushRayChecked;
+  })();
+
+  function draw(e) {
+    if (mousedown) {
+      mouseX = e.pageX - canvas.offsetLeft;
+      mouseY = e.pageY - canvas.offsetTop;
+      ctx.beginPath();
+
+      if (brushRayChecked) {
+        ctx.moveTo(rayPoint[0], rayPoint[1]);
+      } else {
+        if (prevPoint) {
+          ctx.moveTo(prevPoint[0], prevPoint[1]);
+        } else {
+          ctx.moveTo(mouseX - brushXOffset, mouseY - brushYOffset);
+        }
+      }
+
+      ctx.lineTo(mouseX, mouseY);
+      prevPoint = [mouseX - brushXOffset, mouseY - brushYOffset];
+      ctx.lineWidth = width;
+      ctx.lineCap = brushLineValue;
+      ctx.strokeStyle = color;
+      ctx.stroke();
+    }
+  }
+
+  function downLoadImage () {
+    canvas.toBlob(function (blob) { // toDataURL 是同步操作, 执行会阻塞UI, 推荐使用 toBlob
+      let a = document.createElement('a');
+
+      url = URL.createObjectURL(blob);
+      a.href = url;
+      a.download = 'downImage.jpg';
+      a.click();
+      a = null;
+      URL.revokeObjectURL(url);
+    });
+  }
+
+  function resetPrevPoint() {
+    prevPoint = null;
+  }
+
+  function brushXChange(e) {
+    brushXOffset = e.target.value;
+  }
+
+  function brushYChange(e) {
+    brushYOffset = e.target.value;
+  }
+
+  function brushWidthChange(e) {
+    width = e.target.value;
+  }
+
+  function brushColorChange(e) {
+    color = e.target.value;
+  }
+
+  function brushPointChange(e) {
+    brushPonitLink = e.target.checked;
+    !brushPonitLink && resetPrevPoint();
+  }
+
+  function brushRayChange(e) {
+    brushRayChecked = e.target.checked;
+  }
+
+  function brushLineChange(e) {
+    console.info(e);
+    brushLineValue = e.target.value;
+  }
+
+  function backgroundImageChange(e) {
+    const file = e.target.files[0];
+    const src = URL.createObjectURL(file);
+    const image = new Image();
+
+    console.info(src);
+    image.src = src;
+    image.onload = function () {
+      ctx.drawImage(image, 0, 0);
+      URL.revokeObjectURL(src);
+    }
+  }
+</script>
+</body>
+</html>
