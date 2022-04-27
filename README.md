@@ -1,5 +1,5 @@
 # canvas-downloadImage.github.io
-#### 纯 JS
+#### 原生 JS
 #### 快速滑动时丝滑绘制
 #### 上传、绘制、下载图片
 
